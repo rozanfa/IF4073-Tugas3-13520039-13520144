@@ -5,6 +5,7 @@ function imageEnhancementUI()
     % Persistent variables untuk digunakan dlm fungsi lain
     persistent greyHist;
     persistent enhancedImg;
+    persistent segmentedImage;
     
     % Inisialisasi variable persistent
     if isempty(greyHist)
@@ -13,9 +14,12 @@ function imageEnhancementUI()
     if isempty(enhancedImg)
         enhancedImg = [];
     end
+    if isempty(segmentedImage)
+        segmentedImage = [];
+    end
 
     % Create MATLAB UI
-    fig = figure('Name', 'Image Enhancement', 'NumberTitle', 'off', 'Position', [100, 100, 800, 600]);
+    fig = figure('Name', 'Image Enhancement', 'NumberTitle', 'off', 'Position', [100, 100, 1000, 600]);
 
     % Komponen UI
     uicontrol('Style', 'pushbutton', 'String', 'Load Image', 'Position', [20, 540, 100, 30], 'Callback', @loadImage);
@@ -25,36 +29,48 @@ function imageEnhancementUI()
     aField = uicontrol('Style', 'edit', 'Position', [40, 490, 60, 20], 'Callback', @setA, 'Visible', 'off');
     bText = uicontrol('Style', 'text', 'String', 'b:', 'Position', [120, 490, 20, 20], 'Visible', 'off');
     bField = uicontrol('Style', 'edit', 'Position', [140, 490, 60, 20], 'Callback', @setB, 'Visible', 'off');
-    refButton = uicontrol('Style', 'pushbutton', 'String', 'Load Reference', 'Position', [350, 490, 100, 30], 'Callback', @loadRef);
 
-    uicontrol('Style', 'text', 'String', 'Upper Bound Value', 'Position', [520, 570, 100, 20]);
+    
+    uicontrol('Style', 'text', 'String', 'Upper Bound Value', 'Position', [520, 510, 100, 20]);
     upperRedText = uicontrol('Style', 'text', 'String', 'red:', 'Position', [410, 490, 40, 20]);
     upperRedField = uicontrol('Style', 'edit', 'Position', [440, 490, 60, 20], 'Callback', @setUpperRed);
     upperGreenText = uicontrol('Style', 'text', 'String', 'green:', 'Position', [506, 490, 40, 20]);
-    uppergreenField = uicontrol('Style', 'edit', 'Position', [540, 490, 60, 20], 'Callback', @setUpperGreen);
+    upperGreenField = uicontrol('Style', 'edit', 'Position', [540, 490, 60, 20], 'Callback', @setUpperGreen);
     upperBlueText = uicontrol('Style', 'text', 'String', 'blue:', 'Position', [610, 490, 40, 20]);
     upperBlueField = uicontrol('Style', 'edit', 'Position', [640, 490, 60, 20], 'Callback', @setUpperBlue);
 
-    uicontrol('Style', 'text', 'String', 'Lower Bound Value', 'Position', [520, 510, 100, 20]);
+    uicontrol('Style', 'text', 'String', 'Lower Bound Value', 'Position', [520, 570, 100, 20]);
     lowerRedText = uicontrol('Style', 'text', 'String', 'red:', 'Position', [410, 550, 40, 20]);
     lowerRedField = uicontrol('Style', 'edit', 'Position', [440, 550, 60, 20], 'Callback', @setLowerRed);
     lowerGreenText = uicontrol('Style', 'text', 'String', 'green:', 'Position', [506, 550, 40, 20]);
     lowerGreenField = uicontrol('Style', 'edit', 'Position', [540, 550, 60, 20], 'Callback', @setLowerGreen);
     lowerBlueText = uicontrol('Style', 'text', 'String', 'blue:', 'Position', [610, 550, 40, 20]);
     lowerBlueField = uicontrol('Style', 'edit', 'Position', [640, 550, 60, 20], 'Callback', @setLowerBlue);
+    
+
+    uicontrol('Style', 'text', 'String', 'Original Image', 'Position', [145, 150, 100, 20]);
+    uicontrol('Style', 'text', 'String', 'Edge Image', 'Position', [450, 150, 100, 20]);
+    uicontrol('Style', 'text', 'String', 'Result Image', 'Position', [755, 150, 100, 20]);
+
 
     % Enhancement operation dropdown menu
-    enhancementMenu = uicontrol('Style', 'popupmenu', 'String', {'Fill Previous', 'Segment Previous', 'Laplacian Filter', 'LoG Filter', 'Sobel Filter', 'Prewitt Filter', 'Roberts Filter', 'Canny Filter'}, 'Position', [140, 530, 180, 30], 'Callback', @showHideParameters);
+    filterMenu = uicontrol('Style', 'popupmenu', 'String', {'Laplacian Filter', 'LoG Filter', 'Sobel Filter', 'Prewitt Filter', 'Roberts Filter', 'Canny Filter'}, 'Position', [140, 530, 180, 30], 'Callback', @showHideParameters);
     
-    uicontrol('Style', 'pushbutton', 'String', 'Enhance', 'Position', [220, 490, 100, 30], 'Callback', @enhanceImage);
+    uicontrol('Style', 'pushbutton', 'String', 'Filter', 'Position', [140, 490, 80, 30], 'Callback', @enhanceImage);
+
+    % uicontrol('Style', 'pushbutton', 'String', 'Fill', 'Position', [220, 490, 100, 30], 'Callback', @fillSegmentation);
+    uicontrol('Style', 'pushbutton', 'String', 'Apply', 'Position', [240, 490, 80, 30], 'Callback', @applySegmentation);
     
     % Axes untuk display images dan histograms
-    axesImageInput = axes('Position', [0.15, 0.425, 0.35, 0.35]);
-    axesHistogramInput = axes('Position', [0.15, 0.1, 0.35, 0.25]);
-    axesImageEnhanced = axes('Position', [0.55, 0.425, 0.35, 0.35]);
-    axesHistogramEnhanced = axes('Position', [0.55, 0.1, 0.35, 0.25]);
-    refText = uicontrol('Style', 'text', 'String', 'Reference:', 'Position', [450, 575, 100, 15]);
-    axesImageRef = axes('Position', [0.6, 0.82, 0.125, 0.125]);
+    axesImageInput = axes('Position', [0.07, 0.325, 0.25, 0.40]);
+    axesImageFiltered = axes('Position', [0.37, 0.325, 0.25, 0.40]);
+    axesImageSegmented = axes('Position', [0.67, 0.325, 0.25, 0.40]);
+
+    axes(axesImageFiltered);
+    imshow([]);
+
+    axes(axesImageSegmented);
+    imshow([]);
     
     % Inisialisasi dengan cameraman.tif
     img = imread('cameraman.tif');
@@ -63,12 +79,6 @@ function imageEnhancementUI()
 
     showHideParameters();
 
-    if greyHist
-        plotHistogram(axesHistogramInput, img);
-    else
-        plotRGBHistogram(axesHistogramInput, img);
-    end
-    
     % Inisialisasi variable lain
     a = 1;
     b = 0;
@@ -82,7 +92,7 @@ function imageEnhancementUI()
     
     % Callback functions
     function showHideParameters(~, ~)
-        enhancementIdx = get(enhancementMenu, 'Value');
+        enhancementIdx = get(filterMenu, 'Value');
         
         % Set komponen "a" dan "b" hidden
         set(parText, 'Visible', 'off')
@@ -90,15 +100,10 @@ function imageEnhancementUI()
         set(bText, 'Visible', 'off');
         set(aField, 'Visible', 'off');
         set(bField, 'Visible', 'off');
-        set(refButton, 'Visible', 'off');
-        set(refText, 'Visible', 'off');
-        set(axesImageRef, 'Visible', 'off')
-        axes(axesImageRef);
-        imshow([]);
     
         % Show komponen "a" dan "b" berdasarkan enhancement yang dipilih
         switch enhancementIdx
-            case 4
+            case 2
                 set(parText, 'Visible', 'on')                
                 set(aText, 'Visible', 'on', 'String', 'n:');
                 set(aField, 'Visible', 'on');
@@ -112,11 +117,6 @@ function imageEnhancementUI()
             img = imread(fullfile(path, file));
             axes(axesImageInput);
             imshow(img);
-            if greyHist
-                plotHistogram(axesHistogramInput, img);
-            else
-                plotRGBHistogram(axesHistogramInput, img);
-            end
         end
     end
 
@@ -130,24 +130,6 @@ function imageEnhancementUI()
         end
     end
 
-    % Toggle Histogram antara greyscale dan RGB (komponen R, G, dan B terpisah)
-    function toggleHist(~, ~)
-        if length(size(img)) > 2
-            if greyHist
-                greyHist = false;
-                plotRGBHistogram(axesHistogramInput, img);
-                if ~isempty(enhancedImg)
-                    plotRGBHistogram(axesHistogramEnhanced, enhancedImg);
-                end
-            else
-                greyHist = true;
-                plotHistogram(axesHistogramInput, img);
-                if ~isempty(enhancedImg)
-                    plotHistogram(axesHistogramEnhanced, img);
-                end
-            end
-        end
-    end
 
     function setA(src, ~)
         a = str2double(get(src, 'String'));
@@ -184,12 +166,13 @@ function imageEnhancementUI()
     function enhanceImage(~, ~)
         if ~isempty(img)
             % Get enhancement operation yang dipilih
-            enhancementIdx = get(enhancementMenu, 'Value');
+            enhancementIdx = get(filterMenu, 'Value');
             hasChannel = length(size(img)) > 2;
             if hasChannel & lowerRed ~= -1
                 doubleImg = double(img);
                 % gray = uint8(((red/100) .* doubleImg(:, :, 1) + (green/100) .* doubleImg(:, :, 2) + (blue/100) .* doubleImg(:, :, 3)) ./ ((red + green + blue)/100));
-                gray = (img(:, :, 1) <= upperRed & img(:, :, 1) >= lowerRed & img(:, :, 2) <= upperGreen & img(:, :, 2) >= lowerGreen & img(:, :, 3) <= upperBlue & img(:, :, 3) >= lowerBlue) .* 255;
+                gray = (img(:, :, 1) <= upperRed & img(:, :, 1) >= lowerRed & img(:, :, 2) <= upperGreen & img(:, :, 2) >= lowerGreen & img(:, :, 3) <= upperBlue & img(:, :, 3) >= lowerBlue) * 255;
+                gray = im2uint8(gray);
             elseif hasChannel
                 gray = im2gray(img);
             else
@@ -198,90 +181,37 @@ function imageEnhancementUI()
             
             switch enhancementIdx
                 case 1
-                    enhancedImg = fillHoles(enhancedImg);
-                case 2
-                    enhancedImg = segmentFunction(img, enhancedImg);
-                case 3
                     enhancedImg = laplaceFunction(gray);
-                case 4
+                case 2
                     enhancedImg = logFunction(gray, a);
-                case 5
+                case 3
                     enhancedImg = sobelFunction(gray);
-                case 6
+                case 4
                     enhancedImg = prewitt(gray);
-                case 7
+                case 5
                     enhancedImg = roberts(gray);
-                case 8
+                case 6
                     enhancedImg = canny(gray);
             end
             
-            axes(axesImageEnhanced);
+            axes(axesImageFiltered);
             imshow(enhancedImg);
-            if greyHist
-                plotHistogram(axesHistogramEnhanced, enhancedImg);
-            else
-                plotRGBHistogram(axesHistogramEnhanced, enhancedImg);
-            end
+        else
+            msgbox('Please load an image first.', 'Error', 'error');
+        end
+    end
+
+    function applySegmentation(~, ~)
+        enhanceImage()
+        if ~isempty(enhancedImg)
+            segmentedImage = segmentFunction(img, enhancedImg);
+            axes(axesImageSegmented);
+            imshow(segmentedImage);
         else
             msgbox('Please load an image first.', 'Error', 'error');
         end
     end
     
-    function plotHistogram(axesHandle, image)
-        axes(axesHandle);
-    
-        % Inisialisasi histogram
-        grayHistogram = getHist(image);
-    
-        % Display histogram
-        bar(0:256 - 1, grayHistogram); % 0-255
-        title('Histogram');
-        xlabel('Pixel Value');
-        ylabel('Frequency');
-    end
-
-    function plotRGBHistogram(axesHandle, image)
-        % Set level histogram
-        levels = 256;
-    
-        [rows, cols, ~] = size(image);
-    
-        % Inisialisasi histogram untuk R, G, dan B masing-masing
-        redHistogram = zeros(1, levels);
-        greenHistogram = zeros(1, levels);
-        blueHistogram = zeros(1, levels);
-    
-        % Hitung jumlah pixel setiap warna
-        for r = 1:rows
-            for c = 1:cols
-                pixelValueRed = image(r, c, 1);
-                pixelValueGreen = image(r, c, 2);
-                pixelValueBlue = image(r, c, 3);
-    
-                % Update masing-masing histogram warna
-                redHistogram(pixelValueRed + 1) = redHistogram(pixelValueRed + 1) + 1;
-                greenHistogram(pixelValueGreen + 1) = greenHistogram(pixelValueGreen + 1) + 1;
-                blueHistogram(pixelValueBlue + 1) = blueHistogram(pixelValueBlue + 1) + 1;
-            end
-        end
-    
-        % Buat subplot pada axes handle
-        axes(axesHandle);
-    
-        histData = [redHistogram; greenHistogram; blueHistogram];
-    
-        % Buat bar chart dengan custom color
-        bar(0:levels - 1, histData', 'grouped');
-    
-        % Set warna bar masing-masing R, G, B 
-        set(gca, 'ColorOrder', [1 0 0; 0 1 0; 0 0 1]);
-        
-        % Set title dan label
-        title('RGB Histogram');
-        xlabel('Pixel Value');
-        ylabel('Frequency');
-        legend('Red', 'Green', 'Blue');
-    end
 
 
 end
@@ -304,7 +234,7 @@ function filledImg = fillHoles(img)
     binary = imbinarize(closedImg, "global");
     % binary = imbinarize(img, "global");
     filledImg = imfill(binary, "holes");
-    filledImg = imopen(filledImg, strel(ones(3,3)));
+    filledImg = imopen(filledImg, strel(ones(4,4)));
 end
 
 function segmentImg = segmentFunction(img, holes)
