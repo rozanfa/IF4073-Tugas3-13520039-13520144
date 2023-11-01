@@ -404,8 +404,8 @@ end
 % Roberts edge detection
 function res = robertsFunction(image)
     % Create R1 and R2 Roberts filters
-    r1 = convolution(image, [1 0; 0 -1]);
-    r2 = convolution(image, [0 1; -1 0]);
+    r1 = convn(image, [1 0; 0 -1], 'same');
+    r2 = convn(image, [0 1; -1 0], 'same');
 
     % Calculate the magnitude of the gradient
     res = abs(r1) + abs(r2);
@@ -417,8 +417,8 @@ end
 % Prewitt edge detection
 function res = prewittFunctions(image)
     % Create P1 and P2 Prewitt filters
-    Jx = convolution(image, [-1 0 1; -1 0 1; -1 0 1]);
-    Jy = convolution(image, [-1 -1 -1; 0 0 0; 1 1 1]);
+    Jx = convn(image, [-1 0 1; -1 0 1; -1 0 1], 'same');
+    Jy = convn(image, [-1 -1 -1; 0 0 0; 1 1 1], 'same');
 
 
     % Calculate the magnitude of the gradient
@@ -431,32 +431,6 @@ end
 % Canny edge detection
 function res = cannyFunctions(image)
     res = im2uint8(edge(image, "canny"));
-end
-
-% Convolution of an image with a filter
-function res = convolution(image, filter)
-    image = double(image);
-    filter = double(filter);
-    image_size = get_image_size(image);
-    [filter_length_x, filter_length_y] = size(filter);
-
-    % Check if filter is a square matrix
-    if filter_length_x ~= filter_length_y
-        error("Filter must be a square matrix")
-    end
-
-    filter_length = filter_length_x;
-    res = zeros(image_size);
-
-    % Loop over all channels
-    for c = 1:image_size(3)
-        % Loop over all pixels
-        for i = 1:image_size(1)-filter_length+1
-            for j = 1:image_size(2)-filter_length+1
-                res(i,j,c) = sum(dot(image(i:i+filter_length-1, j:j+filter_length-1, c), filter), "all");
-            end
-        end
-    end
 end
 
 function image_size = get_image_size(image)
