@@ -8,6 +8,7 @@ function imageEnhancementUI()
     persistent segmentedImage;
     persistent isUsingThreshold;
     persistent minimumPixel;
+    persistent dilationSize;
 
     % Inisialisasi variable persistent
     if isempty(greyHist)
@@ -21,6 +22,7 @@ function imageEnhancementUI()
     end
     isUsingThreshold = false;
     minimumPixel = 500;
+    dilationSize = 2;
 
     % Create MATLAB UI
     fig = figure('Name', 'Image Enhancement', 'NumberTitle', 'off', 'Position', [100, 100, 1000, 600]);
@@ -34,11 +36,14 @@ function imageEnhancementUI()
     bText = uicontrol('Style', 'text', 'String', 'b:', 'Position', [120, 490, 20, 20], 'Visible', 'off');
     bField = uicontrol('Style', 'edit', 'Position', [140, 490, 60, 20], 'Callback', @setB, 'Visible', 'off');
 
-    uicontrol('Style', 'text', 'String', 'Remove connected components that have fewer than minimum pixels', 'Position', [400, 530, 200, 40], "HorizontalAlignment", "left");
-    uicontrol('Style', 'text', 'String', 'Minimum pixels:', 'Position', [400, 518, 100, 20], "HorizontalAlignment", "left");
-    uicontrol('Style', 'edit', 'Position', [480, 520, 100, 20], 'Callback', @setMinimumPixel, "String", minimumPixel);
-    useThresholdCheckbox = uicontrol('Style', 'checkbox', 'String', 'Use Color Threshold', 'Position', [400, 490, 150, 20], 'Callback', @setIsUsingThreshold, "Enable","off");
-    useThresholdError = uicontrol('Style', 'text', 'String', 'Threshold can only be used on colored image', 'Position', [400, 470, 240, 20], "HorizontalAlignment", "left", "Visible","on");
+    uicontrol('Style', 'text', 'String', 'Remove connected components that have fewer than minimum pixels', 'Position', [400, 540, 200, 40], "HorizontalAlignment", "left");
+    uicontrol('Style', 'text', 'String', 'Minimum pixels:', 'Position', [400, 528, 100, 20], "HorizontalAlignment", "left");
+    uicontrol('Style', 'edit', 'Position', [480, 530, 100, 20], 'Callback', @setMinimumPixel, "String", minimumPixel);
+
+    uicontrol('Style', 'text', 'String', 'Dilation size:', 'Position', [400, 498, 100, 20], "HorizontalAlignment", "left");
+    uicontrol('Style', 'edit', 'Position', [480, 500, 100, 20], 'Callback', @setDilationSize, "String", dilationSize);
+    useThresholdCheckbox = uicontrol('Style', 'checkbox', 'String', 'Use Color Threshold', 'Position', [400, 480, 150, 20], 'Callback', @setIsUsingThreshold, "Enable","off");
+    useThresholdError = uicontrol('Style', 'text', 'String', 'Threshold can only be used on colored image', 'Position', [400, 460, 240, 20], "HorizontalAlignment", "left", "Visible","on");
 
     upperBoundTitle = uicontrol('Style', 'text', 'String', 'Upper Bound Value', 'Position', [720, 510, 100, 20]);
     upperRedText = uicontrol('Style', 'text', 'String', 'red:', 'Position', [610, 490, 40, 20]);
@@ -180,6 +185,10 @@ function imageEnhancementUI()
         minimumPixel = str2double(get(src, 'String'));
     end
 
+    function setDilationSize(src, ~)
+        dilationSize = str2double(get(src, 'String'));
+    end
+
     function setIsUsingThreshold(src, ~)
         isUsingThreshold = get(src, 'Value');
         
@@ -242,7 +251,7 @@ function imageEnhancementUI()
     function applySegmentation(~, ~)
         getEdgeImage()
         if ~isempty(edgeImg)
-            segmentedImage = segmentFunction(img, edgeImg, minimumPixel);
+            segmentedImage = segmentFunction(img, edgeImg, minimumPixel, dilationSize);
             axes(axesImageSegmented);
             imshow(segmentedImage);
         else
@@ -323,12 +332,12 @@ function hist = getHist(img)
 end
 
 % Function to fill holes in an edge image
-function filledImg = fillHoles(img, minimumPixel)
+function filledImg = fillHoles(img, minimumPixel, dilationSize)
     % closedImg = imclose(img, strel('disk', 4));
     binary = imbinarize(img, "global");
     % openedImg = imopen(binary, strel(ones(4,4)));
-    dilateImg = imdilate(binary, strel('disk', 2));
-    erodeImg = imerode(dilateImg, strel('disk', 1));
+    dilateImg = imdilate(binary, strel('disk', dilationSize));
+    erodeImg = imerode(dilateImg, strel('disk', dilationSize));
     bridgedImg = bwmorph(erodeImg, 'bridge');
     filledImg = imfill(bridgedImg, "holes");
     maskImg = bwareaopen(filledImg, minimumPixel);
@@ -337,8 +346,8 @@ end
 
 % Image segmentation
 % Segmentation using connected component
-function segmentImg = segmentFunction(img, edgeImg, minimumPixel)
-    binary = fillHoles(edgeImg, minimumPixel);
+function segmentImg = segmentFunction(img, edgeImg, minimumPixel, dilationSize)
+    binary = fillHoles(edgeImg, minimumPixel, dilationSize);
 
     if (sum(binary == 1, "all") > sum(binary == 0, "all"))
         binary = binary .^ 0;
