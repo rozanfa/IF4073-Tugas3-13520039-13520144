@@ -1,4 +1,4 @@
-# Tugas Besar 1
+# Tugas 3
 ## IF4073 Interpretasi dan Pengolahan Citra
 ![App](assets/example.jpg)
 
