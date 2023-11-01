@@ -208,7 +208,6 @@ function imageEnhancementUI()
             enhancementIdx = get(filterMenu, 'Value');
             hasChannel = length(size(img)) > 2;
             if hasChannel & isUsingThreshold
-                % gray = uint8(((red/100) .* doubleImg(:, :, 1) + (green/100) .* doubleImg(:, :, 2) + (blue/100) .* doubleImg(:, :, 3)) ./ ((red + green + blue)/100));
                 binary = (img(:, :, 1) <= upperRed & img(:, :, 1) >= lowerRed & img(:, :, 2) <= upperGreen & img(:, :, 2) >= lowerGreen & img(:, :, 3) <= upperBlue & img(:, :, 3) >= lowerBlue);
                 gray = uint8(double(im2gray(img)) .* double(binary));
             elseif hasChannel
