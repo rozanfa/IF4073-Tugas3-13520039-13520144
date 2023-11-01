@@ -325,12 +325,15 @@ end
 
 % Function to fill holes in an edge image
 function filledImg = fillHoles(img, minimumPixel)
-    closedImg = imclose(img, strel('line',10,0));
-    binary = imbinarize(closedImg, "global");
-    filledImg = imfill(binary, "holes");
-    opened_image = imopen(filledImg, strel(ones(3,3)));
-    mask_image = bwareaopen(opened_image, minimumPixel);
-    filledImg = mask_image;
+    % closedImg = imclose(img, strel('disk', 4));
+    binary = imbinarize(img, "global");
+    % openedImg = imopen(binary, strel(ones(4,4)));
+    dilateImg = imdilate(binary, strel('disk', 2));
+    erodeImg = imerode(dilateImg, strel('disk', 1));
+    bridgedImg = bwmorph(erodeImg, 'bridge');
+    filledImg = imfill(bridgedImg, "holes");
+    maskImg = bwareaopen(filledImg, minimumPixel);
+    filledImg = maskImg;
 end
 
 % Image segmentation
