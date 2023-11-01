@@ -130,7 +130,7 @@ function imageEnhancementUI()
 
     % Load image
     function loadImage(~, ~)
-        [file, path] = uigetfile({'*.jpg;*.png;*.bmp;*.tif', 'Image Files (*.jpg, *.png, *.bmp, *.tif)'}, 'Select an image');
+        [file, path] = uigetfile({'*.jpg;*.jpeg;*.png;*.bmp;*.tif', 'Image Files (*.jpg, *.jpeg, *.png, *.bmp, *.tif)'}, 'Select an image');
         if file
             img = imread(fullfile(path, file));
             axes(axesImageInput);
